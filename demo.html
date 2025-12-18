@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>森德綠-奔跑蛋 Sentakgreen | 土地與餐桌的共鳴</title>
+
+    <!-- 字體引入：Noto Serif TC (人文感) 與 Inter (數據感) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Noto+Serif+TC:wght@300;500;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- GSAP for Animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'eggshell': '#FDFCF8', // 蛋殼白
+                        'yolk': '#FFB74D',     // 蛋黃金
+                        'yolk-deep': '#FFA726',
+                        'sage': '#8DA399',     // 鼠尾草綠
+                        'sage-dark': '#5C7A6B',
+                        'loam': '#4A4036',     // 土壤棕
+                        'stone': '#EAE8E4',
+                    },
+                    fontFamily: {
+                        serif: ['"Noto Serif TC"', 'serif'],
+                        sans: ['"Inter"', 'sans-serif'],
+                    },
+                    borderRadius: {
+                        'egg': '50% / 60% 40% 60% 40%', // 有機蛋形
+                        'pebble': '30% 70% 70% 30% / 30% 30% 70% 70%', // 卵石
+                        'blob': '60% 40% 30% 70% / 60% 30% 70% 40%',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* 全局質感設定 */
+        body {
+            background-color: #FDFCF8;
+            color: #4A4036;
+            overflow-x: hidden;
+        }
+
+        /* 噪點紋理 (Noise Texture) */
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.06;
+            filter: url(#noiseFilter);
+        }
+
+        /* 自定義選取顏色 */
+        ::selection {
+            background: #FFB74D;
+            color: #FDFCF8;
+        }
+
+        /* 柔和的擴散陰影 */
+        .shadow-diffuse {
+            box-shadow: 0 20px 60px -15px rgba(74, 64, 54, 0.1);
+        }
+
+        .shadow-glow {
+            box-shadow: 0 10px 40px -10px rgba(255, 183, 77, 0.4);
+        }
+
+        /* 隱藏 Scrollbar 但保持功能 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #FDFCF8;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #EAE8E4;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #D1CDC7;
+        }
+
+        /* Utility */
+        .text-vertical {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+    </style>
+</head>
+
+<body class="antialiased font-serif selection:bg-yolk selection:text-white">
+
+    <!-- SVG Noise Filter Definition -->
+    <svg style="display: none;">
+        <filter id="noiseFilter">
+            <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch" />
+        </filter>
+    </svg>
+    <div class="noise-overlay"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 transition-all duration-300 py-6 px-6 md:px-12 mix-blend-multiply" id="navbar">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="#" class="text-2xl font-bold tracking-widest text-loam z-50 relative group">
+                SENTAKGREEN
+                <span
+                    class="block text-[10px] tracking-[0.3em] font-sans text-sage group-hover:text-yolk transition-colors">森德綠-奔跑蛋</span>
+            </a>
+
+            <div class="hidden md:flex space-x-12 items-center font-sans text-sm tracking-widest text-loam/80">
+                <a href="#philosophy" class="hover:text-yolk transition-colors">品牌理念</a>
+                <a href="#hen-life" class="hover:text-yolk transition-colors">平飼日常</a>
+                <a href="#nutrition" class="hover:text-yolk transition-colors">營養科學</a>
+                <a href="#recipes" class="hover:text-yolk transition-colors">餐桌靈感</a>
+                <button
+                    class="px-6 py-3 bg-loam text-eggshell rounded-full hover:bg-yolk hover:text-loam transition-all duration-300 shadow-diffuse">
+                    立即購買
+                </button>
+            </div>
+
+            <!-- Mobile Menu Icon -->
+            <button id="mobile-menu-btn" class="md:hidden text-loam z-50 relative">
+                <i data-lucide="menu" class="w-8 h-8 transition-transform duration-300"></i>
+                <i data-lucide="x" class="w-8 h-8 absolute top-0 left-0 scale-0 transition-transform duration-300"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu"
+        class="fixed inset-0 bg-eggshell/95 backdrop-blur-xl z-40 translate-x-full transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] flex items-center justify-center md:hidden">
+        <div class="flex flex-col items-center gap-8 text-2xl font-serif text-loam">
+            <a href="#philosophy" class="mobile-link hover:text-yolk transition-colors" onclick="toggleMenu()">品牌理念</a>
+            <a href="#hen-life" class="mobile-link hover:text-yolk transition-colors" onclick="toggleMenu()">平飼日常</a>
+            <a href="#nutrition" class="mobile-link hover:text-yolk transition-colors" onclick="toggleMenu()">營養科學</a>
+            <a href="#recipes" class="mobile-link hover:text-yolk transition-colors" onclick="toggleMenu()">餐桌靈感</a>
+            <div class="w-12 h-[1px] bg-loam/20 my-4"></div>
+            <a href="#"
+                class="text-base font-sans tracking-widest bg-loam text-eggshell px-8 py-3 rounded-full hover:bg-yolk hover:text-loam transition-colors shadow-lg"
+                onclick="toggleMenu()">立即購買</a>
+        </div>
+
+        <!-- Decorative Blob inside Menu -->
+        <div
+            class="absolute bottom-0 left-0 w-64 h-64 bg-yolk/10 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3 pointer-events-none">
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <header class="relative w-full h-screen flex items-center justify-center overflow-hidden">
+        <!-- Background Abstract Blob -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vh] h-[120vh] bg-[#FFF8E7] rounded-full blur-3xl opacity-60 pointer-events-none"
+            id="hero-bg"></div>
+
+        <div class="relative z-10 text-center px-4 max-w-5xl mx-auto pt-24 md:pt-0">
+            <p class="font-sans text-sage tracking-[0.4em] mb-6 text-sm md:text-base hero-anim">
+                ORGANIC & FREE RANGE</p>
+            <h1 class="text-5xl md:text-7xl lg:text-9xl font-light text-loam leading-[1.1] mb-8 hero-anim">
+                土地與餐桌的<br>
+                <span class="italic font-serif text-yolk-deep">溫柔共鳴</span>
+            </h1>
+
+            <!-- Mobile Hero Visual Anchor: Magazine Style -->
+            <div class="md:hidden relative w-64 h-72 mx-auto my-10 hero-anim">
+                <!-- Abstract Decor Layer -->
+                <div class="absolute inset-0 bg-[#F0EFE9] rounded-blob transform rotate-6 scale-105"></div>
+                <!-- Main Visual -->
+                <img src="https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?q=80&w=600&auto=format&fit=crop"
+                    alt="Hen Portrait"
+                    class="relative z-10 w-full h-full object-cover rounded-blob shadow-xl transform -rotate-3 hover:rotate-0 transition-transform duration-700">
+                <!-- Badge -->
+                <div
+                    class="absolute -bottom-4 -right-2 z-20 bg-eggshell px-4 py-2 rounded-full shadow-lg border border-loam/10 flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-sage"></div>
+                    <span class="text-xs font-sans tracking-widest text-loam">EST. 2024</span>
+                </div>
+            </div>
+
+            <p class="font-sans text-loam/70 max-w-lg mx-auto leading-relaxed mb-12 hero-anim">
+                在工業化的浪潮中，我們選擇回歸本質。<br>每一顆蛋，都是陽光、土壤與自由奔跑的結晶。
+            </p>
+
+            <div class="flex justify-center hero-anim">
+                <a href="#philosophy"
+                    class="group flex flex-col items-center gap-2 text-loam/50 hover:text-yolk transition-colors duration-300">
+                    <span class="text-xs font-sans tracking-widest">SCROLL</span>
+                    <i data-lucide="arrow-down" class="w-5 h-5 animate-bounce"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Decorative Elements -->
+        <!-- Right Bottom Egg Image: Desktop Only -->
+        <img src="https://images.unsplash.com/photo-1506976785307-8732e854ad03?q=80&w=800&auto=format&fit=crop"
+            alt="Organic Egg"
+            class="hidden md:block absolute bottom-[10%] right-[5%] w-32 md:w-48 h-40 md:h-60 object-cover rounded-egg shadow-diffuse hero-img"
+            style="transform: rotate(15deg);">
+
+        <!-- Left Top Hen Image: Desktop Only -->
+        <img src="https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?q=80&w=600&auto=format&fit=crop"
+            alt="Hen in grass"
+            class="hidden md:block absolute top-[15%] left-[5%] w-40 md:w-56 h-48 md:h-64 object-cover rounded-pebble shadow-diffuse hero-img"
+            style="transform: rotate(-10deg);">
+    </header>
+
+    <!-- Philosophy Section: Narrative Scrolling -->
+    <section id="philosophy" class="py-24 md:py-40 px-6 overflow-hidden">
+        <div class="max-w-7xl mx-auto">
+            <!-- Part 1 -->
+            <div class="flex flex-col md:flex-row items-center gap-12 md:gap-24 mb-32 reveal-section">
+                <div class="w-full md:w-1/2 relative">
+                    <div class="aspect-[4/5] w-full relative">
+                        <!-- Abstract shape behind -->
+                        <div
+                            class="absolute -top-10 -left-10 w-full h-full bg-[#F0EFE9] rounded-egg -z-10 transform -rotate-6">
+                        </div>
+                        <img src="https://images.unsplash.com/photo-1516467508483-a7212febe31a?q=80&w=1000&auto=format&fit=crop"
+                            alt="Morning Light on Farm" class="w-full h-full object-cover rounded-egg shadow-lg">
+                    </div>
+                </div>
+                <div class="w-full md:w-1/2 md:pl-10">
+                    <span class="block font-sans text-yolk font-bold tracking-widest text-sm mb-4">01. THE ORIGIN</span>
+                    <h2 class="text-4xl md:text-5xl mb-8 leading-tight">不只是農產品，<br>是關於<span
+                            class="italic text-sage">自由</span>的宣言。</h2>
+                    <p class="font-sans text-loam/70 leading-loose mb-8 text-lg">
+                        我們的雞隻不認識籠子。牠們在充滿苜蓿草的野地裡啄食、沙浴、展翅。我們相信，只有快樂的母雞，才能產出充滿生命力的雞蛋。
+                        <br><br>
+                        這不是一種行銷話術，這是一種對生命的尊重。
+                    </p>
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-[1px] bg-loam/30"></div>
+                        <span class="font-serif italic text-loam/60">Organic Modernism</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Part 2: Centered Impact -->
+            <div class="relative py-20 text-center reveal-section">
+                <h3 class="text-3xl md:text-5xl font-serif text-loam mb-12">潔淨標籤，透明可見</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                    <!-- Card 1 -->
+                    <div
+                        class="p-8 bg-white/50 backdrop-blur-sm rounded-[2rem] border border-stone hover:shadow-glow transition-all duration-500 group">
+                        <div
+                            class="w-16 h-16 bg-sage/10 rounded-full flex items-center justify-center mx-auto mb-6 text-sage group-hover:bg-yolk/20 group-hover:text-yolk-deep transition-colors">
+                            <i data-lucide="sprout" class="w-8 h-8"></i>
+                        </div>
+                        <h4 class="text-xl font-bold mb-3">100% 無抗生素</h4>
+                        <p class="font-sans text-sm text-loam/60">堅持自然免疫，絕不使用藥物催化。</p>
+                    </div>
+                    <!-- Card 2 -->
+                    <div
+                        class="p-8 bg-white/50 backdrop-blur-sm rounded-[2rem] border border-stone hover:shadow-glow transition-all duration-500 group">
+                        <div
+                            class="w-16 h-16 bg-sage/10 rounded-full flex items-center justify-center mx-auto mb-6 text-sage group-hover:bg-yolk/20 group-hover:text-yolk-deep transition-colors">
+                            <i data-lucide="sun" class="w-8 h-8"></i>
+                        </div>
+                        <h4 class="text-xl font-bold mb-3">平飼放牧</h4>
+                        <p class="font-sans text-sm text-loam/60">每隻雞擁有 2 平方公尺的活動空間。</p>
+                    </div>
+                    <!-- Card 3 -->
+                    <div
+                        class="p-8 bg-white/50 backdrop-blur-sm rounded-[2rem] border border-stone hover:shadow-glow transition-all duration-500 group">
+                        <div
+                            class="w-16 h-16 bg-sage/10 rounded-full flex items-center justify-center mx-auto mb-6 text-sage group-hover:bg-yolk/20 group-hover:text-yolk-deep transition-colors">
+                            <i data-lucide="wheat" class="w-8 h-8"></i>
+                        </div>
+                        <h4 class="text-xl font-bold mb-3">全植物飼料</h4>
+                        <p class="font-sans text-sm text-loam/60">添加亞麻籽與金盞花，蛋黃香濃無腥味。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- NEW SECTION: A Day in the Life (Storytelling) -->
+    <section id="hen-life" class="py-24 bg-[#F5F3EF] relative overflow-hidden">
+        <!-- Decoration Line -->
+        <div class="absolute top-0 left-1/2 w-[1px] h-24 bg-loam/20"></div>
+
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-20 reveal-section">
+                <span class="block font-sans text-sage-dark font-bold tracking-widest text-sm mb-4">ANIMAL
+                    WELFARE</span>
+                <h2 class="text-3xl md:text-5xl font-serif text-loam">快樂母雞的日常</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Story Card 1 -->
+                <div class="group relative aspect-[3/4] rounded-blob overflow-hidden reveal-section">
+                    <img src="https://images.unsplash.com/photo-1516467508483-a7212febe31a?q=80&w=1000&auto=format&fit=crop"
+                        class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        alt="Foraging">
+                    <div
+                        class="absolute inset-0 bg-gradient-to-t from-loam/80 to-transparent flex flex-col justify-end p-8 text-white translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                        <span class="font-sans text-xs tracking-widest text-yolk mb-2">07:00 AM</span>
+                        <h3 class="text-2xl font-serif mb-2">晨間覓食</h3>
+                        <p class="font-sans text-sm opacity-80 leading-relaxed">當第一道陽光灑下，雞群便走出戶外，在草叢間尋找蟲子與嫩草。</p>
+                    </div>
+                </div>
+
+                <!-- Story Card 2 -->
+                <div class="group relative aspect-[3/4] rounded-blob overflow-hidden mt-12 md:mt-0 reveal-section">
+                    <img src="https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?q=80&w=600&auto=format&fit=crop"
+                        class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        alt="Sand Bathing">
+                    <div
+                        class="absolute inset-0 bg-gradient-to-t from-loam/80 to-transparent flex flex-col justify-end p-8 text-white translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                        <span class="font-sans text-xs tracking-widest text-yolk mb-2">02:00 PM</span>
+                        <h3 class="text-2xl font-serif mb-2">慵懶沙浴</h3>
+                        <p class="font-sans text-sm opacity-80 leading-relaxed">透過在沙土中翻滾，不僅能清潔羽毛，更是牠們最放鬆的社交時刻。</p>
+                    </div>
+                </div>
+
+                <!-- Story Card 3 -->
+                <div class="group relative aspect-[3/4] rounded-blob overflow-hidden reveal-section">
+                    <img src="https://images.unsplash.com/photo-1506976785307-8732e854ad03?q=80&w=800&auto=format&fit=crop"
+                        class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        alt="Roosting">
+                    <div
+                        class="absolute inset-0 bg-gradient-to-t from-loam/80 to-transparent flex flex-col justify-end p-8 text-white translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                        <span class="font-sans text-xs tracking-widest text-yolk mb-2">07:00 PM</span>
+                        <h3 class="text-2xl font-serif mb-2">高處棲息</h3>
+                        <p class="font-sans text-sm opacity-80 leading-relaxed">依照天性，我們提供多層棲架，讓母雞能安心地在高處睡眠。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Parallax Image Section (Visual Trust) -->
+    <section class="w-full h-[50vh] md:h-[70vh] relative overflow-hidden flex items-center justify-center">
+        <div class="absolute inset-0 z-0">
+            <img src="https://images.unsplash.com/photo-1506976785307-8732e854ad03?q=80&w=800&auto=format&fit=crop"
+                alt="Texture of Eggshells" class="w-full h-full object-cover parallax-img opacity-90">
+            <div class="absolute inset-0 bg-loam/10 mix-blend-multiply"></div>
+        </div>
+        <div
+            class="relative z-10 bg-eggshell/90 backdrop-blur-md p-10 md:p-16 rounded-egg text-center max-w-2xl mx-6 shadow-2xl reveal-section">
+            <h2 class="text-3xl md:text-5xl font-serif mb-6 text-loam">看得見的質地</h2>
+            <p class="font-sans text-loam/80 mb-8 leading-relaxed">
+                蛋殼的氣孔，是會呼吸的證明。<br>
+                濃稠的蛋白，是新鮮的保證。
+            </p>
+        </div>
+    </section>
+
+    <!-- NEW SECTION: Nutrition Science (Infographic Style) -->
+    <section id="nutrition" class="py-24 px-6 max-w-7xl mx-auto">
+        <div class="flex flex-col md:flex-row gap-16 items-center">
+            <div class="w-full md:w-1/3 reveal-section">
+                <span class="block font-sans text-yolk font-bold tracking-widest text-sm mb-4">NUTRITION FACTS</span>
+                <h2 class="text-4xl font-serif text-loam mb-6">營養，<br>源自純粹</h2>
+                <p class="text-loam/70 font-sans leading-loose mb-8">
+                    經由 SGS 檢驗認證，沐光放牧蛋的營養價值遠高於市售籠養蛋。這不是添加，而是保留了自然最原始的給予。
+                </p>
+                <a href="#"
+                    class="inline-flex items-center text-sage-dark border-b border-sage-dark pb-1 hover:text-yolk hover:border-yolk transition-colors font-sans text-sm tracking-wider">
+                    下載完整檢驗報告 <i data-lucide="download" class="ml-2 w-4 h-4"></i>
+                </a>
+            </div>
+
+            <div class="w-full md:w-2/3 grid grid-cols-2 gap-6 reveal-section">
+                <!-- Data Point 1 -->
+                <div
+                    class="bg-white p-8 rounded-[2rem] border border-stone/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="text-5xl md:text-6xl font-sans font-light text-yolk-deep mb-2">3<span
+                            class="text-2xl ml-1">倍</span></div>
+                    <div class="h-[1px] w-12 bg-loam/10 my-4"></div>
+                    <h4 class="font-bold text-loam mb-2">Omega-3 脂肪酸</h4>
+                    <p class="text-xs text-loam/60 font-sans">相較於一般穀物飼養籠養蛋</p>
+                </div>
+                <!-- Data Point 2 -->
+                <div
+                    class="bg-white p-8 rounded-[2rem] border border-stone/50 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="text-5xl md:text-6xl font-sans font-light text-sage-dark mb-2">20<span
+                            class="text-2xl ml-1">%</span></div>
+                    <div class="h-[1px] w-12 bg-loam/10 my-4"></div>
+                    <h4 class="font-bold text-loam mb-2">卵磷脂含量</h4>
+                    <p class="text-xs text-loam/60 font-sans">有助於大腦發育與記憶力</p>
+                </div>
+                <!-- Data Point 3 -->
+                <div
+                    class="bg-white p-8 rounded-[2rem] border border-stone/50 shadow-sm hover:shadow-md transition-shadow col-span-2 flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-loam mb-2 text-xl">葉黃素與維生素 D</h4>
+                        <p class="text-sm text-loam/60 font-sans">源自於雞隻每日充足的日曬與綠色蔬菜攝取。</p>
+                    </div>
+                    <div
+                        class="w-16 h-16 rounded-full bg-gradient-to-br from-yolk to-yolk-deep shadow-inner flex items-center justify-center text-white">
+                        <i data-lucide="check" class="w-8 h-8"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- NEW SECTION: Culinary Inspiration (Visual Gallery) -->
+    <section id="recipes" class="py-24 bg-eggshell text-loam relative overflow-hidden">
+        <!-- Subtle Organic Background Decor (Optional) -->
+        <div
+            class="absolute top-0 right-0 w-[50vh] h-[50vh] bg-[#FFF8E7] rounded-full blur-3xl opacity-60 -translate-y-1/2 translate-x-1/3 pointer-events-none">
+        </div>
+
+        <div class="max-w-7xl mx-auto px-6 relative z-10">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-16 reveal-section">
+                <div>
+                    <span class="block font-sans text-yolk-deep font-bold tracking-widest text-sm mb-4">CULINARY
+                        MUSE</span>
+                    <h2 class="text-4xl md:text-5xl font-serif text-loam">主廚的秘密武器</h2>
+                </div>
+                <p class="md:w-1/3 text-loam/70 font-sans mt-6 md:mt-0 leading-relaxed">
+                    無論是簡單的生蛋拌飯，還是講究的法式烘焙。一顆好蛋，能決定料理的靈魂。
+                </p>
+            </div>
+
+            <!-- Grid Layout with Aspect Ratios instead of Fixed Height -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 reveal-section">
+                <!-- Large Item (Vertical Focus) -->
+                <div class="md:col-span-7 relative group overflow-hidden rounded-[2.5rem]">
+                    <div class="aspect-[3/4] md:aspect-[4/3] lg:aspect-auto lg:h-full w-full relative">
+                        <img src="https://images.unsplash.com/photo-1590412200988-a436970781fa?q=80&w=800&auto=format&fit=crop"
+                            class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                            alt="Baking with Eggs">
+                        <!-- Gradient Overlay for Text Readability -->
+                        <div
+                            class="absolute inset-0 bg-gradient-to-t from-loam/60 via-transparent to-transparent opacity-80 transition-opacity">
+                        </div>
+
+                        <div class="absolute bottom-8 left-8 text-eggshell">
+                            <span
+                                class="text-xs font-sans tracking-widest border border-eggshell/40 px-3 py-1 rounded-full backdrop-blur-md bg-white/10">BAKING</span>
+                            <h3 class="text-3xl font-serif mt-4">法式甜點的<br>蓬鬆關鍵</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stacked Items (Horizontal Balance) -->
+                <div class="md:col-span-5 flex flex-col gap-6">
+                    <!-- Item 1 -->
+                    <div class="relative group overflow-hidden rounded-[2.5rem] flex-1">
+                        <div class="aspect-[4/3] w-full relative h-full">
+                            <img src="https://images.unsplash.com/photo-1590412200988-a436970781fa?q=80&w=800&auto=format&fit=crop"
+                                class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                                alt="Poached Egg">
+                            <div
+                                class="absolute inset-0 bg-gradient-to-t from-loam/60 via-transparent to-transparent opacity-80">
+                            </div>
+                            <div class="absolute bottom-6 left-6 text-eggshell">
+                                <span
+                                    class="text-xs font-sans tracking-widest border border-eggshell/40 px-3 py-1 rounded-full backdrop-blur-md bg-white/10">BRUNCH</span>
+                                <h3 class="text-xl font-serif mt-2">完美的班尼迪克蛋</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Item 2 -->
+                    <div class="relative group overflow-hidden rounded-[2.5rem] flex-1">
+                        <div class="aspect-[4/3] w-full relative h-full">
+                            <img src="https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?q=80&w=800&auto=format&fit=crop"
+                                class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                                alt="Tamagoyaki">
+                            <div
+                                class="absolute inset-0 bg-gradient-to-t from-loam/60 via-transparent to-transparent opacity-80">
+                            </div>
+                            <div class="absolute bottom-6 left-6 text-eggshell">
+                                <span
+                                    class="text-xs font-sans tracking-widest border border-eggshell/40 px-3 py-1 rounded-full backdrop-blur-md bg-white/10">DAILY</span>
+                                <h3 class="text-xl font-serif mt-2">金黃厚蛋燒</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Products / CTA Section -->
+    <section id="products" class="py-24 md:py-32 px-6 bg-[#F5F3EF]">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center">
+            <div class="w-full md:w-1/2 mb-12 md:mb-0 reveal-section">
+                <span class="text-yolk font-sans font-bold tracking-widest mb-4 block">OUR SELECTION</span>
+                <h2 class="text-4xl md:text-6xl mb-8">把晨光帶上餐桌</h2>
+                <div class="font-sans text-loam/70 space-y-4 mb-10">
+                    <div class="flex items-center gap-4">
+                        <i data-lucide="check-circle-2" class="text-sage w-5 h-5"></i>
+                        <span>當日撿拾，產地直送</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <i data-lucide="check-circle-2" class="text-sage w-5 h-5"></i>
+                        <span>定期配送計畫 (由您決定頻率)</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <i data-lucide="check-circle-2" class="text-sage w-5 h-5"></i>
+                        <span>100% 環保再生紙漿包裝</span>
+                    </div>
+                </div>
+                <button
+                    class="group relative px-8 py-4 bg-loam text-eggshell rounded-full overflow-hidden shadow-diffuse hover:scale-105 transition-transform duration-300">
+                    <span class="relative z-10 flex items-center gap-2">
+                        開始訂閱
+                        <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+                    </span>
+                    <div
+                        class="absolute inset-0 bg-yolk transform scale-x-0 origin-left group-hover:scale-x-100 transition-transform duration-300 ease-out">
+                    </div>
+                </button>
+            </div>
+
+            <div class="w-full md:w-1/2 relative flex justify-center reveal-section">
+                <!-- Product Image Composition -->
+                <div class="relative w-80 h-80 md:w-96 md:h-96">
+                    <div class="absolute inset-0 bg-yolk/20 rounded-full blur-3xl animate-pulse"></div>
+                    <img src="https://images.unsplash.com/photo-1506976785307-8732e854ad03?q=80&w=800&auto=format&fit=crop"
+                        alt="Egg Box"
+                        class="relative z-10 w-full h-full object-cover rounded-pebble shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-700">
+
+                    <!-- Floating Badge -->
+                    <div class="absolute -bottom-6 -right-6 bg-white p-6 rounded-full shadow-lg z-20 w-32 h-32 flex flex-col items-center justify-center animate-bounce"
+                        style="animation-duration: 3s;">
+                        <span class="font-sans text-xs text-loam/50">PROTEIN</span>
+                        <span class="font-serif text-2xl font-bold text-loam">7.5g</span>
+                        <span class="font-sans text-[10px] text-loam/50">PER EGG</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-loam text-eggshell py-20 px-6">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
+            <div class="md:col-span-1">
+                <a href="#" class="text-2xl font-bold tracking-widest mb-6 block">SUN-GRAZED</a>
+                <p class="text-white/60 text-sm font-sans leading-relaxed">
+                    致力於透過友善放牧，<br>找回食物最純粹的感動。
+                </p>
+            </div>
+
+            <div>
+                <h4 class="font-sans font-bold mb-6 text-yolk text-sm tracking-widest">SHOP</h4>
+                <ul class="space-y-4 text-sm text-white/60 font-sans">
+                    <li><a href="#" class="hover:text-white transition-colors">單次購買</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">定期配送</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">企業採購</a></li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 class="font-sans font-bold mb-6 text-yolk text-sm tracking-widest">ABOUT</h4>
+                <ul class="space-y-4 text-sm text-white/60 font-sans">
+                    <li><a href="#" class="hover:text-white transition-colors">牧場故事</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">檢驗報告</a></li>
+                    <li><a href="#" class="hover:text-white transition-colors">聯絡我們</a></li>
+                </ul>
+            </div>
+
+            <div class="md:col-span-1">
+                <h4 class="font-sans font-bold mb-6 text-yolk text-sm tracking-widest">NEWSLETTER</h4>
+                <div class="flex border-b border-white/20 pb-2">
+                    <input type="email" placeholder="輸入您的 Email"
+                        class="bg-transparent w-full outline-none text-white placeholder-white/40 font-sans text-sm">
+                    <button class="text-white/60 hover:text-white uppercase text-xs tracking-widest">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <div
+            class="max-w-7xl mx-auto mt-20 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center text-xs text-white/40 font-sans">
+            <p>&copy; 2024 Sun-Grazed Farm. All rights reserved.</p>
+            <div class="flex gap-6 mt-4 md:mt-0">
+                <a href="#" class="hover:text-white">Privacy Policy</a>
+                <a href="#" class="hover:text-white">Terms of Use</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- GSAP Animations -->
+    <script>
+        // Mobile Menu Logic
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const menuIcon = menuBtn.querySelector('[data-lucide="menu"]');
+        const closeIcon = menuBtn.querySelector('[data-lucide="x"]');
+        let isMenuOpen = false;
+
+        function toggleMenu() {
+            isMenuOpen = !isMenuOpen;
+
+            if (isMenuOpen) {
+                // Open Menu
+                mobileMenu.classList.remove('translate-x-full');
+                menuIcon.classList.add('scale-0', 'rotate-90');
+                closeIcon.classList.remove('scale-0');
+                closeIcon.classList.add('rotate-90');
+                document.body.style.overflow = 'hidden'; // Lock scroll
+            } else {
+                // Close Menu
+                mobileMenu.classList.add('translate-x-full');
+                menuIcon.classList.remove('scale-0', 'rotate-90');
+                closeIcon.classList.add('scale-0');
+                closeIcon.classList.remove('rotate-90');
+                document.body.style.overflow = ''; // Unlock scroll
+            }
+        }
+
+        menuBtn.addEventListener('click', toggleMenu);
+
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Register ScrollTrigger
+        gsap.registerPlugin(ScrollTrigger);
+
+        // 1. Hero Animations (Entrance)
+        const tl = gsap.timeline();
+        tl.from(".hero-anim", {
+            y: 30,
+            opacity: 0,
+            duration: 1.2,
+            stagger: 0.2,
+            ease: "power3.out"
+        })
+            .from(".hero-img", {
+                opacity: 0,
+                scale: 0.9,
+                duration: 1.5,
+                stagger: 0.3,
+                ease: "elastic.out(1, 0.75)"
+            }, "-=1.0");
+
+        // 2. Navbar Glass Effect
+        gsap.to("#navbar", {
+            scrollTrigger: {
+                trigger: "body",
+                start: "top -50px",
+                end: "top -51px",
+                toggleClass: { targets: "#navbar", className: "bg-eggshell/90 backdrop-blur-md shadow-sm" }
+            }
+        });
+
+        // 3. Reveal Sections on Scroll (Fade Up)
+        gsap.utils.toArray('.reveal-section').forEach(section => {
+            gsap.fromTo(section,
+                { y: 50, opacity: 0 },
+                {
+                    y: 0,
+                    opacity: 1,
+                    duration: 1,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: section,
+                        start: "top 80%", // 當元素頂部到達視窗 80% 處觸發
+                        toggleActions: "play none none reverse"
+                    }
+                }
+            );
+        });
+
+        // 4. Parallax Image Effect
+        gsap.to(".parallax-img", {
+            yPercent: 20,
+            ease: "none",
+            scrollTrigger: {
+                trigger: ".parallax-img",
+                start: "top bottom",
+                end: "bottom top",
+                scrub: true
+            }
+        });
+
+        // 5. Hero Background Blob Movement (Mouse movement interaction)
+        document.addEventListener("mousemove", (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 40;
+            const y = (e.clientY / window.innerHeight - 0.5) * 40;
+            gsap.to("#hero-bg", {
+                x: x,
+                y: y,
+                duration: 2,
+                ease: "power2.out"
+            });
+        });
+
+    </script>
+</body>
+
+</html>
